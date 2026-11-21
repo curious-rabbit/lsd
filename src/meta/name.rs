@@ -8,6 +8,19 @@ use std::cmp::{Ordering, PartialOrd};
 use std::ffi::OsStr;
 use std::path::{Component, Path, PathBuf};
 
+/// Escapes control characters (C0, DEL, C1) so the terminal shows them instead of running them.
+pub fn escape_control(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if c.is_control() {
+            out.extend(c.escape_default());
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 #[derive(Debug)]
 pub enum DisplayOption<'a> {
     FileName,
@@ -90,25 +103,7 @@ impl Name {
                 name = format!("\'{}\'", &name);
             }
         }
-        let string = name;
-        if string
-            .chars()
-            .all(|c| c >= 0x20 as char && c != 0x7f as char)
-        {
-            string
-        } else {
-            let mut chars = String::new();
-            for c in string.chars() {
-                // The `escape_default` method on `char` is *almost* what we want here, but
-                // it still escapes non-ASCII UTF-8 characters, which are still printable.
-                if c >= 0x20 as char && c != 0x7f as char {
-                    chars.push(c);
-                } else {
-                    chars += &c.escape_default().collect::<String>();
-                }
-            }
-            chars
-        }
+        escape_control(&name)
     }
 
     fn hyperlink(&self, name: String, hyperlink: HyperlinkOption) -> String {
@@ -219,6 +214,7 @@ impl PartialEq for Name {
 mod test {
     use super::DisplayOption;
     use super::Name;
+    use super::escape_control;
     use crate::color::{self, Colors};
     use crate::flags::PermissionFlag;
     use crate::flags::{HyperlinkOption, IconOption, IconTheme as FlagTheme};
@@ -237,6 +233,15 @@ mod test {
     #[cfg(unix)]
     use std::process::Command;
     use tempfile::tempdir;
+
+    #[test]
+    fn test_escape_control() {
+        assert_eq!(
+            escape_control("a\x1b\t\x7f\u{9b}b"),
+            "a\\u{1b}\\t\\u{7f}\\u{9b}b"
+        );
+        assert_eq!(escape_control("café_文件 \u{a0}"), "café_文件 \u{a0}");
+    }
 
     #[test]
     #[cfg(unix)] // Windows uses different default permissions

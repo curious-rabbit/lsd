@@ -505,6 +505,65 @@ fn test_bad_utf_8_name() {
         .stdout(predicate::str::is_match("bad-name\u{fffd}\u{fffd}.ext\n$").unwrap());
 }
 
+#[cfg(unix)]
+#[test]
+fn test_escape_control_in_symlink_target() {
+    let tmp = tempdir();
+    let link = tmp.path().join("link");
+    fs::symlink("a\x1b]0;X\x07b", &link).unwrap();
+
+    cmd()
+        .arg("-l")
+        .arg("--ignore-config")
+        .arg(link)
+        .assert()
+        .stdout(predicate::str::contains("⇒ a\\u{1b}]0;X\\u{7}b\n"));
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn test_bad_utf_8_symlink_target() {
+    let tmp = tempdir();
+    let link = tmp.path().join("link");
+    fs::symlink(bad_utf8(tmp.path(), "target", ""), &link).unwrap();
+
+    cmd()
+        .arg("-l")
+        .arg("--ignore-config")
+        .arg(link)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("target\u{fffd}\u{fffd}\n"));
+}
+
+#[cfg(unix)]
+#[test]
+fn test_escape_control_in_recursive_header() {
+    let tmp = tempdir();
+    tmp.child("a\x1b]0;X\x07b").child("file").touch().unwrap();
+
+    cmd()
+        .arg("-R")
+        .arg("--ignore-config")
+        .arg(tmp.path())
+        .assert()
+        .stdout(predicate::str::contains("a\\u{1b}]0;X\\u{7}b:\n"));
+}
+
+#[cfg(unix)]
+#[test]
+fn test_escape_control_in_error() {
+    let tmp = tempdir();
+
+    cmd()
+        .arg("--ignore-config")
+        .arg(tmp.path().join("a\x1b]0;X\x07b"))
+        .assert()
+        .stderr(predicate::str::contains(
+            "a\\u{1b}]0;X\\u{7}b: No such file",
+        ));
+}
+
 #[test]
 fn test_tree() {
     let tmp = tempdir();

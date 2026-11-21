@@ -147,7 +147,7 @@ impl Core {
                         exit_code.set_if_greater(path_exit_code);
                     }
                     Err(err) => {
-                        print_error!("lsd: {}: {}\n", path.display(), err);
+                        print_error!("{}: {}.", path.display(), err);
                         exit_code.set_if_greater(ExitCode::MinorIssue);
                         continue;
                     }

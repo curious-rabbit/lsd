@@ -1,5 +1,6 @@
 use crate::color::{ColoredString, Colors, Elem};
 use crate::flags::Flags;
+use crate::meta::name::escape_control;
 use std::fs::read_link;
 use std::path::Path;
 
@@ -15,22 +16,12 @@ impl From<&Path> for SymLink {
             if target.is_absolute() || path.parent().is_none() {
                 return Self {
                     valid: target.exists(),
-                    target: Some(
-                        target
-                            .to_str()
-                            .expect("failed to convert symlink to str")
-                            .to_string(),
-                    ),
+                    target: Some(target.to_string_lossy().into_owned()),
                 };
             }
 
             return Self {
-                target: Some(
-                    target
-                        .to_str()
-                        .expect("failed to convert symlink to str")
-                        .to_string(),
-                ),
+                target: Some(target.to_string_lossy().into_owned()),
                 valid: path.parent().unwrap().join(target).exists(),
             };
         }
@@ -57,7 +48,7 @@ impl SymLink {
 
             let strings: &[ColoredString] = &[
                 ColoredString::new(Colors::default_style(), format!(" {} ", flag.symlink_arrow)), // ⇒ \u{21d2}
-                colors.colorize(target_string, elem),
+                colors.colorize(escape_control(&target_string), elem),
             ];
 
             let res = strings

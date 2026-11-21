@@ -26,6 +26,7 @@ pub use self::indicator::Indicator;
 pub use self::inode::INode;
 pub use self::links::Links;
 pub use self::name::Name;
+use self::name::escape_control;
 pub use self::owner::{Cache as OwnerCache, Owner};
 pub use self::permissions::Permissions;
 use self::permissions_or_attributes::PermissionsOrAttributes;
@@ -280,7 +281,7 @@ impl Meta {
                     // path.symlink_metadata would have errored out
                     if dereference {
                         broken_link = true;
-                        eprintln!("lsd: {}: {}", path.to_str().unwrap_or(""), e);
+                        eprintln!("lsd: {}: {}", escape_control(&path.to_string_lossy()), e);
                     }
                 }
             }
@@ -314,7 +315,7 @@ impl Meta {
                 Err(e) => {
                     eprintln!(
                         "lsd: {}: {}(Hint: Consider using `--permission disable`.)",
-                        path.to_str().unwrap_or(""),
+                        escape_control(&path.to_string_lossy()),
                         e
                     );
                     (None, None)

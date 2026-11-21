@@ -3,7 +3,7 @@ use crate::flags::blocks::Block;
 use crate::flags::{Display, Flags, HyperlinkOption, Layout};
 use crate::git_theme::GitTheme;
 use crate::icon::Icons;
-use crate::meta::name::DisplayOption;
+use crate::meta::name::{DisplayOption, escape_control};
 use crate::meta::{FileType, Meta, OwnerCache};
 use std::collections::HashMap;
 use term_grid::{Cell, Direction, Filling, Grid, GridOptions};
@@ -318,7 +318,7 @@ fn should_display_folder_path(depth: usize, metas: &[Meta]) -> bool {
 }
 
 fn display_folder_path(meta: &Meta) -> String {
-    format!("\n{}:\n", meta.path.to_string_lossy())
+    format!("\n{}:\n", escape_control(&meta.path.to_string_lossy()))
 }
 
 #[allow(clippy::too_many_arguments)]
